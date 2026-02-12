@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.runBlocking
 import no.nav.helsemelding.ediadapter.client.EdiAdapterClient
 import no.nav.helsemelding.ediadapter.model.AppRecError
 import no.nav.helsemelding.ediadapter.model.AppRecStatus
@@ -30,23 +29,19 @@ class MessagesProcessor(
     private val ediAdapterClient: EdiAdapterClient
 ) {
 
-    fun processMessages(scope: CoroutineScope) =
+    suspend fun processMessages(scope: CoroutineScope) =
         messageFlow()
             .onEach(::sendApprecAndMarkMessageAsRead)
             .flowOn(Dispatchers.IO)
             .launchIn(scope)
 
-    private fun messageFlow(): Flow<Uuid> {
+    private suspend fun messageFlow(): Flow<Uuid> {
         val getMessagesRequest = GetMessagesRequest(
             receiverHerIds = listOf(ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID),
             includeMetadata = true
         )
 
-        val messages = runBlocking {
-            ediAdapterClient.getMessages(getMessagesRequest)
-        }
-
-        return when (messages) {
+        return when (val messages = ediAdapterClient.getMessages(getMessagesRequest)) {
             is Right ->
                 messages.value
                     .filter { it.isAppRec == false }
