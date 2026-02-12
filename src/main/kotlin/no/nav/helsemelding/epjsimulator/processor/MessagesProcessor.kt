@@ -103,24 +103,13 @@ val apprecRejected = PostAppRecRequest(
     appRecStatus = AppRecStatus.REJECTED,
     appRecErrorList = listOf(
         AppRecError(
-            errorCode = "E100",
+            errorCode = "E10",
             description = "Could not parse business document"
-        )
-    )
-)
-
-val apprecErrorMessageInPart = PostAppRecRequest(
-    appRecStatus = AppRecStatus.OK_ERROR_IN_MESSAGE_PART,
-    appRecErrorList = listOf(
-        AppRecError(
-            errorCode = "E123",
-            description = "Invalid document structure"
         )
     )
 )
 
 val postAppRecRequests = listOf(
     apprecOk,
-    apprecRejected,
-    apprecErrorMessageInPart
+    apprecRejected
 )
