@@ -34,6 +34,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().all {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_21
         freeCompilerArgs = listOf(
+            "-opt-in=kotlin.time.ExperimentalTime",
             "-opt-in=kotlin.uuid.ExperimentalUuidApi,arrow.fx.coroutines.await.ExperimentalAwaitAllApi"
         )
     }
@@ -64,6 +65,7 @@ dependencies {
     implementation(libs.ktor.server.netty)
     implementation(libs.kotlin.logging)
     implementation(libs.token.validation.ktor.v3)
+    implementation(libs.edi.adapter.client)
     testImplementation(testLibs.bundles.kotest)
     testImplementation(testLibs.kotest.assertions.arrow)
     testImplementation(testLibs.kotest.extensions.jvm)
