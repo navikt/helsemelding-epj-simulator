@@ -38,7 +38,8 @@ class MessagesProcessor(
     private suspend fun messageFlow(): Flow<Uuid> {
         val getMessagesRequest = GetMessagesRequest(
             receiverHerIds = listOf(ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID),
-            includeMetadata = true
+            includeMetadata = true,
+            messagesToFetch = 100
         )
 
         return when (val messages = ediAdapterClient.getMessages(getMessagesRequest)) {
