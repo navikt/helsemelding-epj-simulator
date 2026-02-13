@@ -36,7 +36,7 @@ class MessagesProcessorSpec : StringSpec(
             forAll(
                 row(Left(errorMessage404), Left(errorMessage404)),
                 row(Right(true), Left(errorMessage404)),
-                row(Left(errorMessage404), Right(true)),
+                row(Left(errorMessage404), Right(true))
             ) { messageResponse, apprecResponse ->
                 val ediAdapterClient = FakeEdiAdapterClient()
                 val messageId = Uuid.random()

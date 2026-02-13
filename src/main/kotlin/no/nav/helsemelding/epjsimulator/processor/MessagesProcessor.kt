@@ -40,7 +40,7 @@ class MessagesProcessor(
         val getMessagesRequest = GetMessagesRequest(
             receiverHerIds = listOf(EPJ_HERID),
             senderHerId = FAGSYSTEM_HERID,
-            includeMetadata = true,
+            includeMetadata = true
         )
 
         return when (val messages = ediAdapterClient.getMessages(getMessagesRequest)) {
