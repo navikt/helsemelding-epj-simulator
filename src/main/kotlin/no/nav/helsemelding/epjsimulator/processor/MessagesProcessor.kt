@@ -23,7 +23,8 @@ import kotlin.uuid.Uuid
 
 private val log = KotlinLogging.logger {}
 
-const val ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID = 8142519
+const val FAGSYSTEM_HERID = 8142519
+const val EPJ_HERID = 8142520
 
 class MessagesProcessor(
     private val ediAdapterClient: EdiAdapterClient
@@ -37,8 +38,9 @@ class MessagesProcessor(
 
     private suspend fun messageFlow(): Flow<Uuid> {
         val getMessagesRequest = GetMessagesRequest(
-            receiverHerIds = listOf(ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID),
-            includeMetadata = true
+            receiverHerIds = listOf(EPJ_HERID),
+            senderHerId = FAGSYSTEM_HERID,
+            includeMetadata = true,
         )
 
         return when (val messages = ediAdapterClient.getMessages(getMessagesRequest)) {
@@ -49,15 +51,19 @@ class MessagesProcessor(
                     .map { it.id as Uuid }
                     .asFlow()
 
-            is Left -> emptyFlow()
+            is Left -> {
+                log.error { "Failed to get messages for herId: $EPJ_HERID. Error: ${messages.value}" }
+                emptyFlow()
+            }
         }
     }
 
     internal suspend fun sendApprecAndMarkMessageAsRead(messageId: Uuid): Boolean {
         return when (val either = postApprec(messageId)) {
             is Right<Metadata> -> {
-                log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: ${either.value.id}" }
-                markMessageAsRead(messageId)
+                val apprecId = either.value.id
+                log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: $apprecId" }
+                markMessageAsRead(messageId, EPJ_HERID) && markMessageAsRead(apprecId, FAGSYSTEM_HERID)
             }
 
             is Left<ErrorMessage> -> {
@@ -73,15 +79,13 @@ class MessagesProcessor(
 
         return ediAdapterClient.postApprec(
             id = messageId,
-            apprecSenderHerId = ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID,
+            apprecSenderHerId = EPJ_HERID,
             postAppRecRequest = postAppRecRequest
         )
     }
 
-    private suspend fun markMessageAsRead(messageId: Uuid): Boolean {
-        val either = ediAdapterClient.markMessageAsRead(messageId, ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID)
-
-        return when (either) {
+    private suspend fun markMessageAsRead(messageId: Uuid, herId: Int): Boolean {
+        return when (val either = ediAdapterClient.markMessageAsRead(messageId, herId)) {
             is Right<Boolean> -> {
                 log.info { "Successfully marked message: $messageId as read." }
                 either.value
