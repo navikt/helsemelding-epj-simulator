@@ -39,7 +39,7 @@ class MessagesProcessor(
         val getMessagesRequest = GetMessagesRequest(
             receiverHerIds = listOf(ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID),
             includeMetadata = true,
-            messagesToFetch = 100
+            messagesToFetch = 50
         )
 
         return when (val messages = ediAdapterClient.getMessages(getMessagesRequest)) {
