@@ -63,7 +63,9 @@ class MessagesProcessor(
             is Right<Metadata> -> {
                 val apprecId = either.value.id
                 log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: $apprecId" }
-                markMessageAsRead(messageId, EPJ_HERID) && markMessageAsRead(apprecId, FAGSYSTEM_HERID)
+                val isMessageRead = markMessageAsRead(messageId, EPJ_HERID)
+                val isApprecRead = markMessageAsRead(apprecId, FAGSYSTEM_HERID)
+                isMessageRead && isApprecRead
             }
 
             is Left<ErrorMessage> -> {
