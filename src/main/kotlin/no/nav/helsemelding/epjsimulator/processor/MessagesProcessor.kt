@@ -39,7 +39,8 @@ class MessagesProcessor(
     private suspend fun messageFlow(): Flow<Message> {
         val getMessagesRequest = GetMessagesRequest(
             receiverHerIds = listOf(FAGSYSTEM_HERID),
-            includeMetadata = true
+            includeMetadata = true,
+            messagesToFetch = 50
         )
 
         return when (val messages = ediAdapterClient.getMessages(getMessagesRequest)) {
