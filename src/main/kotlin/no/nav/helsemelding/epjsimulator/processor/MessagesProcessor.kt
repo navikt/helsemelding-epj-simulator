@@ -17,13 +17,14 @@ import no.nav.helsemelding.ediadapter.model.AppRecError
 import no.nav.helsemelding.ediadapter.model.AppRecStatus
 import no.nav.helsemelding.ediadapter.model.ErrorMessage
 import no.nav.helsemelding.ediadapter.model.GetMessagesRequest
+import no.nav.helsemelding.ediadapter.model.Message
 import no.nav.helsemelding.ediadapter.model.Metadata
 import no.nav.helsemelding.ediadapter.model.PostAppRecRequest
 import kotlin.uuid.Uuid
 
 private val log = KotlinLogging.logger {}
 
-const val ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID = 8142519
+const val FAGSYSTEM_HERID = 8142519
 
 class MessagesProcessor(
     private val ediAdapterClient: EdiAdapterClient
@@ -35,29 +36,42 @@ class MessagesProcessor(
             .flowOn(Dispatchers.IO)
             .launchIn(scope)
 
-    private suspend fun messageFlow(): Flow<Uuid> {
+    private suspend fun messageFlow(): Flow<Message> {
         val getMessagesRequest = GetMessagesRequest(
-            receiverHerIds = listOf(ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID),
+            receiverHerIds = listOf(FAGSYSTEM_HERID),
             includeMetadata = true
         )
 
         return when (val messages = ediAdapterClient.getMessages(getMessagesRequest)) {
             is Right ->
                 messages.value
-                    .filter { it.isAppRec == false }
-                    .filter { it.id != null }
-                    .map { it.id as Uuid }
+//                    .filter { it.isAppRec == false }
+//                    .filter { it.id != null }
+//                    .map { it.id as Uuid }
                     .asFlow()
 
-            is Left -> emptyFlow()
+            is Left -> {
+                log.error { "Failed to get messages for herId: $FAGSYSTEM_HERID. Error: ${messages.value}" }
+                emptyFlow()
+            }
         }
     }
 
-    internal suspend fun sendApprecAndMarkMessageAsRead(messageId: Uuid): Boolean {
+    internal suspend fun sendApprecAndMarkMessageAsRead(message: Message): Boolean {
+        val messageId = message.id!!
+
+        if (message.isAppRec!!) {
+            log.info { "Message is an apprec. Attempting to mark apprec: $messageId as read" }
+            markMessageAsRead(messageId)
+            return true
+        }
+
         return when (val either = postApprec(messageId)) {
             is Right<Metadata> -> {
-                log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: ${either.value.id}" }
+                val apprecId = either.value.id
+                log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: $apprecId" }
                 markMessageAsRead(messageId)
+                markMessageAsRead(apprecId)
             }
 
             is Left<ErrorMessage> -> {
@@ -73,13 +87,13 @@ class MessagesProcessor(
 
         return ediAdapterClient.postApprec(
             id = messageId,
-            apprecSenderHerId = ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID,
+            apprecSenderHerId = FAGSYSTEM_HERID,
             postAppRecRequest = postAppRecRequest
         )
     }
 
     private suspend fun markMessageAsRead(messageId: Uuid): Boolean {
-        val either = ediAdapterClient.markMessageAsRead(messageId, ADRESSEREGISTERET_HELSEOPPLYSNINGER_TEST1_HERID)
+        val either = ediAdapterClient.markMessageAsRead(messageId, FAGSYSTEM_HERID)
 
         return when (either) {
             is Right<Boolean> -> {
