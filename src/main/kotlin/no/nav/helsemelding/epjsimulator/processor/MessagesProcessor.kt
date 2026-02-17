@@ -39,7 +39,6 @@ class MessagesProcessor(
     private suspend fun messageFlow(): Flow<Uuid> {
         val getMessagesRequest = GetMessagesRequest(
             receiverHerIds = listOf(EPJ_HERID),
-            senderHerId = FAGSYSTEM_HERID,
             includeMetadata = true
         )
 
