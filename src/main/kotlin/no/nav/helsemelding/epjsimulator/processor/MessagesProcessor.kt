@@ -23,7 +23,6 @@ import kotlin.uuid.Uuid
 
 private val log = KotlinLogging.logger {}
 
-const val FAGSYSTEM_HERID = 8142519
 const val EPJ_HERID = 8142520
 
 class MessagesProcessor(
@@ -60,11 +59,8 @@ class MessagesProcessor(
     internal suspend fun sendApprecAndMarkMessageAsRead(messageId: Uuid): Boolean {
         return when (val either = postApprec(messageId)) {
             is Right<Metadata> -> {
-                val apprecId = either.value.id
-                log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: $apprecId" }
-                val isMessageRead = markMessageAsRead(messageId, EPJ_HERID)
-                val isApprecRead = markMessageAsRead(apprecId, FAGSYSTEM_HERID)
-                isMessageRead && isApprecRead
+                log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: ${either.value.id}" }
+                markMessageAsRead(messageId, EPJ_HERID)
             }
 
             is Left<ErrorMessage> -> {
