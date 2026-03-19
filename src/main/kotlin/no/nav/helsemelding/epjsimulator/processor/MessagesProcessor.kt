@@ -17,6 +17,7 @@ import no.nav.helsemelding.ediadapter.model.AppRecError
 import no.nav.helsemelding.ediadapter.model.AppRecStatus
 import no.nav.helsemelding.ediadapter.model.ErrorMessage
 import no.nav.helsemelding.ediadapter.model.GetMessagesRequest
+import no.nav.helsemelding.ediadapter.model.Message
 import no.nav.helsemelding.ediadapter.model.Metadata
 import no.nav.helsemelding.ediadapter.model.PostAppRecRequest
 import kotlin.uuid.Uuid
@@ -31,11 +32,11 @@ class MessagesProcessor(
 
     suspend fun processMessages(scope: CoroutineScope) =
         messageFlow()
-            .onEach(::sendApprecAndMarkMessageAsRead)
+            .onEach(::processMessage)
             .flowOn(Dispatchers.IO)
             .launchIn(scope)
 
-    private suspend fun messageFlow(): Flow<Uuid> {
+    private suspend fun messageFlow(): Flow<Message> {
         val getMessagesRequest = GetMessagesRequest(
             receiverHerIds = listOf(EPJ_HERID),
             includeMetadata = true
@@ -44,9 +45,7 @@ class MessagesProcessor(
         return when (val messages = ediAdapterClient.getMessages(getMessagesRequest)) {
             is Right ->
                 messages.value
-                    .filter { it.isAppRec == false }
                     .filter { it.id != null }
-                    .map { it.id as Uuid }
                     .asFlow()
 
             is Left -> {
@@ -56,7 +55,24 @@ class MessagesProcessor(
         }
     }
 
-    internal suspend fun sendApprecAndMarkMessageAsRead(messageId: Uuid): Boolean {
+    internal suspend fun processMessage(message: Message): Boolean {
+        val messageId = requireNotNull(message.id)
+        val isAppRec = requireNotNull(message.isAppRec)
+
+        return if (isAppRec) {
+            processOutgoingApprec(messageId)
+        } else {
+            processOutgoingMessage(messageId)
+        }
+    }
+
+    private suspend fun processOutgoingApprec(messageId: Uuid): Boolean {
+        log.info { "Processing outgoing apprec: $messageId" }
+        return markMessageAsRead(messageId, EPJ_HERID)
+    }
+
+    private suspend fun processOutgoingMessage(messageId: Uuid): Boolean {
+        log.info { "Processing outgoing message: $messageId" }
         return when (val either = postApprec(messageId)) {
             is Right<Metadata> -> {
                 log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: ${either.value.id}" }
