@@ -5,6 +5,7 @@ import arrow.core.Either.Right
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import no.nav.helsemelding.ediadapter.model.ErrorMessage
+import no.nav.helsemelding.ediadapter.model.Message
 import no.nav.helsemelding.ediadapter.model.Metadata
 import no.nav.helsemelding.epjsimulator.util.FakeEdiAdapterClient
 import kotlin.uuid.Uuid
@@ -17,25 +18,76 @@ class MessagesProcessorSpec : StringSpec(
             requestId = Uuid.random().toString()
         )
 
-        "should return true if sending apprec and marking message and apprec as read succeeds" {
+        "should return true if a message is processed successfully" {
             val ediAdapterClient = FakeEdiAdapterClient()
-            val messageId = Uuid.random()
-            ediAdapterClient.givenPostApprec(messageId, Right(Metadata(Uuid.random(), "")))
-            ediAdapterClient.givenMarkAsRead(messageId, Right(true))
+            val message = Message(
+                id = Uuid.random(),
+                isAppRec = false
+            )
+
+            ediAdapterClient.givenPostApprec(message.id!!, Right(Metadata(Uuid.random(), "")))
+            ediAdapterClient.givenMarkAsRead(message.id!!, Right(true))
 
             val messagesProcessor = MessagesProcessor(ediAdapterClient)
 
-            messagesProcessor.sendApprecAndMarkMessageAsRead(messageId) shouldBe true
+            messagesProcessor.processMessage(message) shouldBe true
+        }
+
+        "should return true if an apprec is processed successfully" {
+            val ediAdapterClient = FakeEdiAdapterClient()
+            val message = Message(
+                id = Uuid.random(),
+                isAppRec = true
+            )
+
+            ediAdapterClient.givenMarkAsRead(message.id!!, Right(true))
+
+            val messagesProcessor = MessagesProcessor(ediAdapterClient)
+
+            messagesProcessor.processMessage(message) shouldBe true
         }
 
         "should return false if sending apprec fails" {
             val ediAdapterClient = FakeEdiAdapterClient()
-            val uuid = Uuid.random()
-            ediAdapterClient.givenPostApprec(uuid, Left(errorMessage404))
+            val message = Message(
+                id = Uuid.random(),
+                isAppRec = false
+            )
+
+            ediAdapterClient.givenPostApprec(message.id!!, Left(errorMessage404))
 
             val messagesProcessor = MessagesProcessor(ediAdapterClient)
 
-            messagesProcessor.sendApprecAndMarkMessageAsRead(uuid) shouldBe false
+            messagesProcessor.processMessage(message) shouldBe false
+        }
+
+        "should return false if marking message as read fails" {
+            val ediAdapterClient = FakeEdiAdapterClient()
+            val message = Message(
+                id = Uuid.random(),
+                isAppRec = true
+            )
+
+            ediAdapterClient.givenPostApprec(message.id!!, Right(Metadata(Uuid.random(), "")))
+            ediAdapterClient.givenMarkAsRead(message.id!!, Left(errorMessage404))
+
+            val messagesProcessor = MessagesProcessor(ediAdapterClient)
+
+            messagesProcessor.processMessage(message) shouldBe false
+        }
+
+        "should return false if marking apprec as read fails" {
+            val ediAdapterClient = FakeEdiAdapterClient()
+            val message = Message(
+                id = Uuid.random(),
+                isAppRec = true
+            )
+
+            ediAdapterClient.givenMarkAsRead(message.id!!, Left(errorMessage404))
+
+            val messagesProcessor = MessagesProcessor(ediAdapterClient)
+
+            messagesProcessor.processMessage(message) shouldBe false
         }
     }
 )
