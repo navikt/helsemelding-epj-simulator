@@ -61,7 +61,7 @@ class MessagesProcessor(
 
         return when (isAppRec) {
             true -> processApprec(messageId)
-            else -> processMessage(messageId)
+            else -> processDialogMessage(messageId)
         }
     }
 
@@ -70,7 +70,7 @@ class MessagesProcessor(
         return markMessageAsRead(messageId, EPJ_HERID)
     }
 
-    private suspend fun processMessage(messageId: Uuid): Boolean {
+    private suspend fun processDialogMessage(messageId: Uuid): Boolean {
         log.info { "Processing message: $messageId" }
         return when (val either = postApprec(messageId)) {
             is Right<Metadata> -> {
