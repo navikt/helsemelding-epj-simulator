@@ -59,20 +59,19 @@ class MessagesProcessor(
         val messageId = requireNotNull(message.id)
         val isAppRec = requireNotNull(message.isAppRec)
 
-        return if (isAppRec) {
-            processOutgoingApprec(messageId)
-        } else {
-            processOutgoingMessage(messageId)
+        return when (isAppRec) {
+            true -> processApprec(messageId)
+            else -> processMessage(messageId)
         }
     }
 
-    private suspend fun processOutgoingApprec(messageId: Uuid): Boolean {
-        log.info { "Processing outgoing apprec: $messageId" }
+    private suspend fun processApprec(messageId: Uuid): Boolean {
+        log.info { "Processing apprec: $messageId" }
         return markMessageAsRead(messageId, EPJ_HERID)
     }
 
-    private suspend fun processOutgoingMessage(messageId: Uuid): Boolean {
-        log.info { "Processing outgoing message: $messageId" }
+    private suspend fun processMessage(messageId: Uuid): Boolean {
+        log.info { "Processing message: $messageId" }
         return when (val either = postApprec(messageId)) {
             is Right<Metadata> -> {
                 log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: ${either.value.id}" }

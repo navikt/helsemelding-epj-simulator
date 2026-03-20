@@ -18,9 +18,8 @@ class MessagesProcessorSpec : StringSpec(
             requestId = Uuid.random().toString()
         )
 
-        "should return true if outgoing message is processed successfully" {
+        "should return true if a message is processed successfully" {
             val ediAdapterClient = FakeEdiAdapterClient()
-
             val message = Message(
                 id = Uuid.random(),
                 isAppRec = false
@@ -34,9 +33,8 @@ class MessagesProcessorSpec : StringSpec(
             messagesProcessor.processMessage(message) shouldBe true
         }
 
-        "should return true if outgoing apprec is processed successfully" {
+        "should return true if an apprec is processed successfully" {
             val ediAdapterClient = FakeEdiAdapterClient()
-
             val message = Message(
                 id = Uuid.random(),
                 isAppRec = true
@@ -51,7 +49,6 @@ class MessagesProcessorSpec : StringSpec(
 
         "should return false if sending apprec fails" {
             val ediAdapterClient = FakeEdiAdapterClient()
-
             val message = Message(
                 id = Uuid.random(),
                 isAppRec = false
@@ -66,7 +63,6 @@ class MessagesProcessorSpec : StringSpec(
 
         "should return false if marking message as read fails" {
             val ediAdapterClient = FakeEdiAdapterClient()
-
             val message = Message(
                 id = Uuid.random(),
                 isAppRec = true
@@ -82,7 +78,6 @@ class MessagesProcessorSpec : StringSpec(
 
         "should return false if marking apprec as read fails" {
             val ediAdapterClient = FakeEdiAdapterClient()
-
             val message = Message(
                 id = Uuid.random(),
                 isAppRec = true
