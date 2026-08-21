@@ -22,7 +22,8 @@ class MessagesProcessorSpec : StringSpec(
             val ediAdapterClient = FakeEdiAdapterClient()
             val message = Message(
                 id = Uuid.random(),
-                isAppRec = false
+                isAppRec = false,
+                receiverHerId = 8142520
             )
 
             ediAdapterClient.givenPostApprec(message.id!!, Right(Metadata(Uuid.random(), "")))
@@ -37,7 +38,8 @@ class MessagesProcessorSpec : StringSpec(
             val ediAdapterClient = FakeEdiAdapterClient()
             val message = Message(
                 id = Uuid.random(),
-                isAppRec = true
+                isAppRec = true,
+                receiverHerId = 8142520
             )
 
             ediAdapterClient.givenMarkAsRead(message.id!!, Right(true))
@@ -51,7 +53,8 @@ class MessagesProcessorSpec : StringSpec(
             val ediAdapterClient = FakeEdiAdapterClient()
             val message = Message(
                 id = Uuid.random(),
-                isAppRec = false
+                isAppRec = false,
+                receiverHerId = 8142520
             )
 
             ediAdapterClient.givenPostApprec(message.id!!, Left(errorMessage404))
@@ -65,7 +68,8 @@ class MessagesProcessorSpec : StringSpec(
             val ediAdapterClient = FakeEdiAdapterClient()
             val message = Message(
                 id = Uuid.random(),
-                isAppRec = true
+                isAppRec = true,
+                receiverHerId = 8142520
             )
 
             ediAdapterClient.givenPostApprec(message.id!!, Right(Metadata(Uuid.random(), "")))
@@ -80,7 +84,8 @@ class MessagesProcessorSpec : StringSpec(
             val ediAdapterClient = FakeEdiAdapterClient()
             val message = Message(
                 id = Uuid.random(),
-                isAppRec = true
+                isAppRec = true,
+                receiverHerId = 8142520
             )
 
             ediAdapterClient.givenMarkAsRead(message.id!!, Left(errorMessage404))

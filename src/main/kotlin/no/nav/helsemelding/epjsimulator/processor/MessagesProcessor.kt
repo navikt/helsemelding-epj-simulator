@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 
 private val log = KotlinLogging.logger {}
 
-const val EPJ_HERID = 8142520
+val EPJ_HER_IDS = listOf(8142520, 8144975, 8144923, 8141731)
 
 class MessagesProcessor(
     private val ediAdapterClient: EdiAdapterClient
@@ -38,7 +38,7 @@ class MessagesProcessor(
 
     private suspend fun messageFlow(): Flow<Message> {
         val getMessagesRequest = GetMessagesRequest(
-            receiverHerIds = listOf(EPJ_HERID),
+            receiverHerIds = EPJ_HER_IDS,
             includeMetadata = true
         )
 
@@ -49,7 +49,7 @@ class MessagesProcessor(
                     .asFlow()
 
             is Left -> {
-                log.error { "Failed to get messages for herId: $EPJ_HERID. Error: ${messages.value}" }
+                log.error { "Failed to get messages for herIds: $EPJ_HER_IDS. Error: ${messages.value}" }
                 emptyFlow()
             }
         }
@@ -58,24 +58,25 @@ class MessagesProcessor(
     internal suspend fun processMessage(message: Message): Boolean {
         val messageId = requireNotNull(message.id)
         val isAppRec = requireNotNull(message.isAppRec)
+        val receiverHerId = requireNotNull(message.receiverHerId)
 
         return when (isAppRec) {
-            true -> processApprec(messageId)
-            else -> processDialogMessage(messageId)
+            true -> processApprec(messageId, receiverHerId)
+            else -> processDialogMessage(messageId, receiverHerId)
         }
     }
 
-    private suspend fun processApprec(messageId: Uuid): Boolean {
+    private suspend fun processApprec(messageId: Uuid, receiverHerId: Int): Boolean {
         log.info { "Processing apprec: $messageId" }
-        return markMessageAsRead(messageId, EPJ_HERID)
+        return markMessageAsRead(messageId, receiverHerId)
     }
 
-    private suspend fun processDialogMessage(messageId: Uuid): Boolean {
+    private suspend fun processDialogMessage(messageId: Uuid, receiverHerId: Int): Boolean {
         log.info { "Processing message: $messageId" }
-        return when (val either = postApprec(messageId)) {
+        return when (val either = postApprec(messageId, receiverHerId)) {
             is Right<Metadata> -> {
                 log.info { "Successfully posted apprec for message: $messageId which received the following apprecId: ${either.value.id}" }
-                markMessageAsRead(messageId, EPJ_HERID)
+                markMessageAsRead(messageId, receiverHerId)
             }
 
             is Left<ErrorMessage> -> {
@@ -85,13 +86,13 @@ class MessagesProcessor(
         }
     }
 
-    private suspend fun postApprec(messageId: Uuid): Either<ErrorMessage, Metadata> {
+    private suspend fun postApprec(messageId: Uuid, senderHerId: Int): Either<ErrorMessage, Metadata> {
         val postAppRecRequest = postAppRecRequests.random()
         log.info { "Attempting to post apprec for message: $messageId with the following apprecStatus: ${postAppRecRequest.appRecStatus}" }
 
         return ediAdapterClient.postApprec(
             id = messageId,
-            apprecSenderHerId = EPJ_HERID,
+            apprecSenderHerId = senderHerId,
             postAppRecRequest = postAppRecRequest
         )
     }
